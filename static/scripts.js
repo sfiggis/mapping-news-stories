@@ -37,7 +37,7 @@ $(function() {
     // options for map
     // https://developers.google.com/maps/documentation/javascript/reference#MapOptions
     var options = {
-        center: {lat: 37.4236, lng: -122.1619}, // Stanford, California
+        center: {lat: 42.3770, lng:  -71.1256}, // Stanford, California
         disableDefaultUI: true,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
         maxZoom: 14,
@@ -63,7 +63,59 @@ $(function() {
  */
 function addMarker(place)
 {
-    // TODO
+    //initiate marker
+    var marker = new google.maps.Marker( {
+        position: new google.maps.LatLng(place.latitude, place.longitude),
+        map: map,
+        label: place.place_name + ", " + place.admin_name1,
+        icon: {url: "https://maps.google.com/mapfiles/kml/pal2/icon31.png",
+        labelOrigin: new google.maps.Point(15, 40),
+        }
+    });
+
+ 
+    // store markers in the array
+    marker.setMap(map);
+    
+    //create box for articles
+    //listen for clicks on marker
+    
+    marker.addListener('click', function() {
+        showInfo(marker);
+        //get search info
+        var parameters = {
+        geo: place.postal_code
+        };
+        //return articles' titles and links via JSON
+        $.getJSON(Flask.url_for("articles"), parameters).done(function(data, textStatus, jqXHR) {
+            //show standard message if no news exists
+            if (data.length == 0)
+            {
+                showInfo(marker, "no news");
+            }
+            else
+            //create bulleted list
+            {
+                var list = "<ul>";
+                for (var key in data)
+                {
+                    list += "<li><a href=" + data[key].link + ">" + data[key].title + "</a></li>";
+                }
+                list += "</ul>";
+                showInfo(marker, list);
+            }
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+
+        // log error to browser's console
+        console.log(errorThrown.toString());
+
+        // call typeahead's callback with no results
+        asyncResults([]);
+    });
+    });
+    //remember and store each marker for removeMarker
+    markers.push(marker);
 }
 
 /**
@@ -99,7 +151,7 @@ function configure()
         templates: {
             suggestion: Handlebars.compile(
                 "<div>" +
-                "TODO" +
+                "{{place_name}}, {{admin_name1}}, {{postal_code}}" +
                 "</div>"
             )
         }
@@ -141,6 +193,13 @@ function configure()
 function removeMarkers()
 {
     // TODO
+    //loop through markers array
+    //for (i = 0; i < markers.length; i++)
+    for (var i in markers)
+    {
+        i.setMap(null);
+    }
+    // use maps api method setMap(null)
 }
 
 /**
