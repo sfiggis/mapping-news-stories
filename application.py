@@ -34,15 +34,32 @@ def articles():
     """Look up articles for geo."""
 
     # TODO
-    return jsonify([])
+    #check geo is argument in url
+    if not request.args.get("geo"):
+        raise RuntimeError("No argument geo")
+        #use lookup to return 5 articles corresponsing to geo
+    return jsonify(lookup(request.args.get("geo"))[:5])
 
 @app.route("/search")
 def search():
     """Search for places that match query."""
 
     # TODO
-    return jsonify([])
-
+    #check q is argument in url
+    if not request.args.get("q"):
+        raise RuntimeError("No argument q")
+    #q = "%" + request.args.get("q") + "%"
+    q = re.split(r"\W+", request.args.get("q"))
+    #q = query[0]
+    lastq = q.pop()
+    
+    if lastq.isnumeric():
+        return jsonify(db.execute("SELECT * FROM places WHERE postal_code LIKE :lastq", lastq=lastq)[:10])
+    else:
+        q.append(lastq)
+    q = ' '.join(q) + "*"
+    return jsonify(db.execute("SELECT * FROM places_search WHERE places_search MATCH :q", q=q)[:10])
+    
 @app.route("/update")
 def update():
     """Find up to 10 places within view."""
